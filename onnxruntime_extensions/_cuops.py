@@ -6,10 +6,13 @@
 """
 _cuops.py: Custom operators signatures for Python usage.
 """
+import json
 
 import onnx
 import numpy
 from onnx import onnx_pb as onnx_proto
+from typing_extensions import Any
+
 from ._ocos import default_opset_domain, Opdef, PyCustomOpDef
 
 
@@ -481,6 +484,29 @@ Opdef.create(_argsort_op,
 
 class CustomOpConverter:
     pass
+
+
+class AsgtTextPreprocessing(CustomOp):
+
+    @classmethod
+    def get_inputs(cls):
+        return [cls.io_def("text", onnx_proto.TensorProto.STRING, [None])]
+
+    @classmethod
+    def get_outputs(cls):
+        return [
+            cls.io_def('input_ids', onnx_proto.TensorProto.INT64, [None, None]),
+        ]
+
+    @classmethod
+    def serialize_attr(cls, attrs):
+        attrs_data = {}
+        for k_, v_ in attrs.items():
+            if k_ == 'vocab':
+                attrs_data['vocab'] = json.dumps(v_).encode("utf-8")
+            else:
+                attrs_data[k_] = v_
+        return attrs_data
 
 
 class SingleOpGraph:

@@ -5,9 +5,10 @@
 #include "string_utils.h"
 #include "wordpiece_tokenizer.hpp"
 #include "bert_tokenizer.hpp"
-
+#include "asgt/asgt_text_preprocessing.hpp"
 #include <clocale>
-
+#include <dlib/algs.h>
+#include <dlib/matrix/matrix.h>
 
 class LocaleBaseTest : public testing::Test{
   public:
@@ -43,6 +44,33 @@ TEST(tokenizer, bert_word_split) {
   text = ustring("  A AAA  B BB ");
   KernelWordpieceTokenizer_Split(ind, text, words);
   EXPECT_EQ(words, expected);
+}
+
+TEST(tokenizer, asgt_split) {
+  ustring text("A AAA B BB");
+  std::vector<std::u32string> words;
+  KernelAsgtTextPreprocessing_Split(text, words);
+  std::vector<std::u32string> expected{ustring("a"), ustring("aaa"), ustring("b"), ustring("bb")};
+  EXPECT_EQ(expected, words);
+}
+
+TEST(tokenizer, asgt_tokenize) {
+  std::unordered_map<std::u32string, int32_t> vocab_tokens = {
+    {U"[UNK]", 0},
+    {U"[PAD]", 1},
+    {U"hello", 2},
+    {U"world", 3},
+};
+  std::vector<std::string> words {"hello ww", "world"};
+  std::vector<ustring> str_input;
+  for (auto& str : words) {
+    str_input.emplace_back(str);
+  }
+  std::vector<int64_t> indicies;
+  int64_t max_size;
+  KernelAsgtTextPreprocessing_Tokenizer(vocab_tokens, str_input, indicies, max_size);
+  std::vector<int> expected{2, 3};
+  EXPECT_EQ(expected, expected);
 }
 
 std::unordered_map<std::u32string, int32_t> get_vocabulary_basic() {

@@ -115,6 +115,9 @@ extern FxLoadCustomOpFactory LoadCustomOpClasses_Math;
 extern FxLoadCustomOpFactory LoadCustomOpClasses_Tokenizer;
 #endif  // ENABLE_TOKENIZER
 
+extern FxLoadCustomOpFactory LoadCustomOpClasses_Asgt;
+
+
 #ifdef ENABLE_TF_STRING
 extern FxLoadCustomOpFactory LoadCustomOpClasses_Text;
 #endif  // ENABLE_TF_STRING

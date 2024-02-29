@@ -32,6 +32,10 @@
 #include "trie_tokenizer.hpp"
 #endif
 
+#ifdef ENABLE_ASGT
+#include "asgt/asgt_text_preprocessing.hpp"
+#endif
+
 FxLoadCustomOpFactory LoadCustomOpClasses_Tokenizer = []() -> CustomOpArray& {
   static OrtOpLoader op_loader(
 #ifdef ENABLE_GPT2_TOKENIZER
@@ -64,6 +68,9 @@ FxLoadCustomOpFactory LoadCustomOpClasses_Tokenizer = []() -> CustomOpArray& {
 
 #ifdef ENABLE_BLINGFIRE
       CustomCpuStruct("BlingFireSentenceBreaker", KernelBlingFireSentenceBreaker),
+#endif
+#ifdef ENABLE_ASGT
+      CustomCpuStruct("AsgtTextPreprocessing", KernelAsgtTextPreprocessing),
 #endif
       []() { return nullptr; });
 

@@ -64,6 +64,7 @@ option(OCOS_ENABLE_CV2 "Enable the operators in `operators/cv2`" ON)
 option(OCOS_ENABLE_VISION "Enable the operators in `operators/vision`" ON)
 option(OCOS_ENABLE_AUDIO "Enable the operators for audio processing" ON)
 option(OCOS_ENABLE_AZURE "Enable the operators for azure execution provider" OFF)
+option(OCOS_ENABLE_ASGT "Enable the operators for ASGT execution provider" ON)
 
 option(OCOS_ENABLE_STATIC_LIB "Enable generating static library" OFF)
 option(OCOS_ENABLE_SELECTED_OPLIST "Enable including the selected_ops tool file" OFF)
@@ -78,9 +79,9 @@ option(OCOS_USE_CUDA "Build the CUDA kernels" OFF)
 # Optional value. Some operators do not support old versions due to using the new custom operator interface
 # and will be disabled if this value is set and the version is incompatible.
 set(OCOS_ONNXRUNTIME_VERSION "" CACHE STRING
-  "The version of ONNX Runtime being used in the build. Format is <major>.<minor>.<patch>. e.g. 1.15.1")
+        "The version of ONNX Runtime being used in the build. Format is <major>.<minor>.<patch>. e.g. 1.15.1")
 set(OCOS_ONNXRUNTIME_PKG_URI "" CACHE STRING
-  "Specify the onnxruntime C++ shared library zip package path, like ./onnxruntime-win-x64-1.16.0.zip")
+        "Specify the onnxruntime C++ shared library zip package path, like ./onnxruntime-win-x64-1.16.0.zip")
 
 # TODO: Remove the following statements if AzureOp build is enabled by default.
 # If build_buildid environment varaible is set, which means this is a CI build, then always enable AzureOp.
@@ -103,6 +104,7 @@ function(disable_all_operators)
   set(OCOS_ENABLE_DLIB OFF CACHE INTERNAL "" FORCE)
   set(OCOS_ENABLE_OPENCV_CODECS OFF CACHE INTERNAL "" FORCE)
   set(OCOS_ENABLE_CV2 OFF CACHE INTERNAL "" FORCE)
+  set(OCOS_ENABLE_ASGT OFF CACHE INTERNAL "" FORCE)
   set(OCOS_ENABLE_VISION OFF CACHE INTERNAL "" FORCE)
   set(OCOS_ENABLE_AZURE OFF CACHE INTERNAL "" FORCE)
   set(OCOS_ENABLE_AUDIO OFF CACHE INTERNAL "" FORCE)
@@ -151,7 +153,7 @@ if (MSVC)
   endif()
 
   if (CMAKE_MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreaded" OR
-      CMAKE_MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreadedDebug")
+          CMAKE_MSVC_RUNTIME_LIBRARY STREQUAL "MultiThreadedDebug")
     set(_STATIC_MSVC_RUNTIME_LIBRARY ON)
   else()
     set(_STATIC_MSVC_RUNTIME_LIBRARY OFF)
@@ -201,11 +203,11 @@ endif()
 
 set(_OCOS_EXCEPTIONS_REQUIRED OFF)
 if (OCOS_ENABLE_GPT2_TOKENIZER OR
-    OCOS_ENABLE_WORDPIECE_TOKENIZER OR
-    OCOS_ENABLE_BLINGFIRE OR
-    OCOS_ENABLE_SPM_TOKENIZER OR
-    (OCOS_ENABLE_CV2 OR OCOS_ENABLE_OPENCV_CODECS OR OCOS_ENABLE_VISION))
-    set(_OCOS_EXCEPTIONS_REQUIRED ON)
+        OCOS_ENABLE_WORDPIECE_TOKENIZER OR
+        OCOS_ENABLE_BLINGFIRE OR
+        OCOS_ENABLE_SPM_TOKENIZER OR
+(OCOS_ENABLE_CV2 OR OCOS_ENABLE_OPENCV_CODECS OR OCOS_ENABLE_VISION))
+  set(_OCOS_EXCEPTIONS_REQUIRED ON)
 endif()
 
 # Special case an embedded build with ORT exceptions disabled but custom ops that require exceptions.
@@ -219,8 +221,8 @@ endif()
 
 if (_OCOS_PREVENT_EXCEPTION_PROPAGATION)
   message(STATUS "Embedded build as part of ONNX Runtime with exceptions disabled. "
-                 "Extensions will be built with exceptions enabled due to included custom ops "
-                 "using 3rd party libraries that require exceptions.")
+          "Extensions will be built with exceptions enabled due to included custom ops "
+          "using 3rd party libraries that require exceptions.")
 
   if (NOT OCOS_ENABLE_CPP_EXCEPTIONS)
     message(WARNING "Enabling C++ exception support as custom ops included in the build require them to be enabled.")
@@ -260,7 +262,7 @@ function(set_msvc_c_cpp_compiler_warning_level warning_level)
     get_property(opts DIRECTORY PROPERTY COMPILE_OPTIONS)
     # only match the generator expression added by this function
     list(FILTER opts
-         EXCLUDE REGEX "^\\$<\\$<OR:\\$<COMPILE_LANGUAGE:C>,\\$<COMPILE_LANGUAGE:CXX>>:/W[0-4]>$")
+            EXCLUDE REGEX "^\\$<\\$<OR:\\$<COMPILE_LANGUAGE:C>,\\$<COMPILE_LANGUAGE:CXX>>:/W[0-4]>$")
     list(APPEND opts "$<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:${warning_flag}>")
     set_property(DIRECTORY PROPERTY COMPILE_OPTIONS "${opts}")
   endif()
@@ -273,10 +275,10 @@ include(gsl)
 
 macro(standardize_output_folder bin_target)
   set_target_properties(${bin_target} PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-    PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+          RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+          LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+          ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+          PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 endmacro()
 
 if(OCOS_USE_CUDA)
@@ -371,6 +373,12 @@ if(OCOS_ENABLE_CV2)
   endif()
 endif()
 
+if(OCOS_ENABLE_ASGT)
+  file(GLOB TARGET_SRC_ASGT "operators/asgt/*.cc" "operators/asgt/*.h*")
+  list(APPEND TARGET_SRC ${TARGET_SRC_ASGT})
+  include(json)
+endif()
+
 if(OCOS_ENABLE_VISION)
   if(NOT OCOS_ENABLE_OPENCV_CODECS)
     message(FATAL_ERROR "OCOS_ENABLE_VISION requires OCOS_ENABLE_OPENCV_CODECS to be ON")
@@ -438,10 +446,10 @@ endif()
 #   - TODO: need to investigate further. currently getting load error with dynamic libs and runtime error with static libs
 if(OCOS_ENABLE_AZURE)
   if (APPLE OR
-      CMAKE_SYSTEM_NAME STREQUAL "Emscripten" OR
-      (MSVC AND CMAKE_GENERATOR_PLATFORM STREQUAL "ARM") OR
-      (MSVC AND _STATIC_MSVC_RUNTIME_LIBRARY) OR
-      (ANDROID AND ANDROID_ABI STREQUAL "x86"))
+          CMAKE_SYSTEM_NAME STREQUAL "Emscripten" OR
+  (MSVC AND CMAKE_GENERATOR_PLATFORM STREQUAL "ARM") OR
+  (MSVC AND _STATIC_MSVC_RUNTIME_LIBRARY) OR
+  (ANDROID AND ANDROID_ABI STREQUAL "x86"))
     message(STATUS "Excluding Azure custom operators as they are not currently supported in this type of build. ")
     set(OCOS_ENABLE_AZURE OFF)
 
@@ -451,7 +459,7 @@ if(OCOS_ENABLE_AZURE)
     list(GET VERSION_LIST 1 ORT_VERSION_MINOR)
     if(ORT_VERSION_MAJOR EQUAL 1 AND ORT_VERSION_MINOR LESS 14)
       message(STATUS "Azure custom operators are not supported with ONNX Runtime versions < 1.14. "
-                     "Excluding them from the build.")
+              "Excluding them from the build.")
       set(OCOS_ENABLE_AZURE OFF)
     endif()
   endif()
@@ -538,8 +546,8 @@ set_target_properties(ocos_operators PROPERTIES FOLDER "operators")
 set(_TARGET_SRC_FOR_SOURCE_GROUP)
 foreach(_TARGET_SRC_FILE IN LISTS TARGET_SRC)
   cmake_path(IS_PREFIX PROJECT_SOURCE_DIR ${_TARGET_SRC_FILE}
-             NORMALIZE
-             _is_prefix_result)
+          NORMALIZE
+          _is_prefix_result)
   if(_is_prefix_result)
     list(APPEND _TARGET_SRC_FOR_SOURCE_GROUP ${_TARGET_SRC_FILE})
   endif()
@@ -550,16 +558,16 @@ standardize_output_folder(noexcep_operators)
 standardize_output_folder(ocos_operators)
 
 target_include_directories(noexcep_operators PUBLIC
-  ${ONNXRUNTIME_INCLUDE_DIR}
-  ${PROJECT_SOURCE_DIR}/includes
-  ${PROJECT_SOURCE_DIR}/base
-  ${PROJECT_SOURCE_DIR}/operators)
+        ${ONNXRUNTIME_INCLUDE_DIR}
+        ${PROJECT_SOURCE_DIR}/includes
+        ${PROJECT_SOURCE_DIR}/base
+        ${PROJECT_SOURCE_DIR}/operators)
 
 target_include_directories(ocos_operators PUBLIC
-  ${ONNXRUNTIME_INCLUDE_DIR}
-  ${PROJECT_SOURCE_DIR}/includes
-  ${PROJECT_SOURCE_DIR}/base
-  ${PROJECT_SOURCE_DIR}/operators)
+        ${ONNXRUNTIME_INCLUDE_DIR}
+        ${PROJECT_SOURCE_DIR}/includes
+        ${PROJECT_SOURCE_DIR}/base
+        ${PROJECT_SOURCE_DIR}/operators)
 
 set(ocos_libraries)
 set(OCOS_COMPILE_DEFINITIONS)
@@ -576,7 +584,7 @@ endif()
 if(_HAS_TOKENIZER)
   list(APPEND OCOS_COMPILE_DEFINITIONS ENABLE_TOKENIZER)
   target_include_directories(ocos_operators PUBLIC
-    ${PROJECT_SOURCE_DIR}/operators/tokenizer)
+          ${PROJECT_SOURCE_DIR}/operators/tokenizer)
 endif()
 
 if(OCOS_ENABLE_TF_STRING)
@@ -609,6 +617,10 @@ endif()
 
 if(OCOS_ENABLE_CV2)
   list(APPEND OCOS_COMPILE_DEFINITIONS ENABLE_CV2)
+endif()
+
+if(OCOS_ENABLE_ASGT)
+  list(APPEND OCOS_COMPILE_DEFINITIONS ENABLE_ASGT)
 endif()
 
 if(OCOS_ENABLE_VISION)
@@ -813,13 +825,13 @@ if(_BUILD_SHARED_LIBRARY)
 
   # Set some properties of your target
   set_target_properties(extensions_shared PROPERTIES
-    VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}
-    SOVERSION ${CPACK_PACKAGE_VERSION_MAJOR}
+          VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}
+          SOVERSION ${CPACK_PACKAGE_VERSION_MAJOR}
   )
 
   # Install your target
   install(TARGETS extensions_shared
-    RUNTIME DESTINATION bin
+          RUNTIME DESTINATION bin
   )
 
 endif()

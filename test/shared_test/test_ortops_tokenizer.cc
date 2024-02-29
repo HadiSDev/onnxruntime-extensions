@@ -417,3 +417,23 @@ TEST(tokenizer_opertors, test_bert_tokenizer_decoder_with_idices) {
   outputs[0].values_string = {"ZheJiuShisuibianDaDePinYing, YongLaiCeshiSuffixCase"};
   TestInference(*ort_env, model_path.c_str(), inputs, outputs);
 }
+
+TEST(tokenizer_opertors, test_asgt) {
+  auto ort_env = std::make_unique<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "Default");
+
+  std::vector<TestValue> inputs(1);
+  inputs[0].name = "text";
+  inputs[0].element_type = ONNXTensorElementDataType::ONNX_TENSOR_ELEMENT_DATA_TYPE_STRING;
+  inputs[0].dims = {3};
+  inputs[0].values_string = {"HELLO", "WORLD", "NOTHING"};
+
+  std::vector<TestValue> outputs(1);
+  outputs[0].name = "input_ids";
+  outputs[0].element_type = ONNXTensorElementDataType::ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT;
+  outputs[0].dims = {3, 1};
+  outputs[0].values_float = {2, 3, 0};
+
+  std::filesystem::path model_path = "data";
+  model_path /= "test_asgt_text_model.onnx";
+  TestInference(*ort_env, model_path.c_str(), inputs, outputs);
+}

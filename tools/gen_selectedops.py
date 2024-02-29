@@ -17,6 +17,9 @@ CMAKE_FLAG_TO_OPS = {
         "BertTokenizer",
         "BertTokenizerDecoder",
     ],
+    "OCOS_ENABLE_ASGT": [
+        "AsgtTextPreprocessing"
+    ],
     "OCOS_ENABLE_BLINGFIRE": [
         "BlingFireSentenceBreaker",
     ],
